@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Need;
 use Illuminate\Http\Request;
 use App\Http\Requests\NeedStoreRequest;
+use App\Http\Requests\NeedUpdateRequest;
+
 
 class NeedController extends Controller
 {
@@ -56,47 +58,17 @@ class NeedController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Need $need)
-    {
-        //
-        $request->validate([
-            'transit_id' => 'required|exists:transits,id',
-            'type' => 'required|in:liman,transit,ikmal,para,numune,konaklama,lojistik,paket',
-            'item' => 'required|string|max:255',
-            'quantity' => [
-    'required',
-    'numeric',
-    function ($attribute, $value, $fail) use ($request) {
-        if ($request->type !== 'para' && floor($value) != $value) {
-            $fail('Miktar tam sayı olmalı.');
-        }
-    }
-],
-            'unit' => 'nullable|string|max:50',
-            'currency' => 'nullable|string|max:3',
-            'tracking_no' => 'nullable|string|max:255',
-            'location' => 'nullable|string|max:255',
-            'requested_at' => 'nullable|date',
-            'delivered_at' => 'nullable|date',
-            'delivered' => 'nullable|boolean',
-            'notes' => 'nullable|string|max:1000',   
-        ]);
-        $need->update([
-            'transit_id' => $request->transit_id,
-            'type' => $request->type,
-            'item' => $request->item,
-            'quantity' => $request->quantity,
-            'unit' => $request->unit,
-            'currency' => $request->currency,
-            'tracking_no' => $request->tracking_no,
-            'location' => $request->location,
-            'requested_at' => $request->requested_at,
-            'delivered_at' => $request->delivered_at,
-            'delivered' => $request->delivered,
-            'notes' => $request->notes
-        ]);
-        return response()->json($need, 200);
-    }
+    public function update(NeedUpdateRequest $request, $id)
+{
+    $need = Need::findOrFail($id); // ID ile ihtiyaç (need) kaydı aranır
+
+    $need->update($request->validated()); // Sadece doğrulanan inputlar güncellenir
+
+    return response()->json([
+        'message' => 'İhtiyaç (need) başarıyla güncellendi',
+        'need'    => $need
+    ]);
+}
 
     /**
      * Remove the specified resource from storage.

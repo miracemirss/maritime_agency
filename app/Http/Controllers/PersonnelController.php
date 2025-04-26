@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Personnel;
 use Illuminate\Http\Request;
 use App\Http\Requests\PersonnelStoreRequest;
+use App\Http\Requests\PersonnelUpdateRequest;
+
 
 class PersonnelController extends Controller
 {
@@ -30,17 +32,17 @@ class PersonnelController extends Controller
         return response()->json($personnel);
     }
 
-    public function update(PersonnelStoreRequest $request, $id)
-    {
-        $personnel = Personnel::findOrFail($id);
-        $personnel->update($request->validated());
+    public function update(PersonnelUpdateRequest $request, $id)
+{
+    $personnel = Personnel::findOrFail($id); // ID ile kayıt aranır
 
-        return response()->json([
-            'message'   => 'Personel başarıyla güncellendi',
-            'personnel' => $personnel
-        ]);
-    }
+    $personnel->update($request->validated()); // Sadece doğrulanan alanlar güncellenir
 
+    return response()->json([
+        'message'   => 'Personel başarıyla güncellendi',
+        'personnel' => $personnel
+    ]);
+}
     public function destroy($id)
     {
         $personnel = Personnel::findOrFail($id);

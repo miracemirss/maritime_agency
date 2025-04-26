@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Transit;
 use Illuminate\Http\Request;
 use App\Http\Requests\TransitStoreRequest;
+use App\Http\Requests\TransitUpdateRequest;
 class TransitController extends Controller
 {
     /**
@@ -62,30 +63,18 @@ public function store(TransitStoreRequest $request)
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Transit $transit)
+    public function update(TransitUpdateRequest $request, $id)
     {
-        //
-        $validationRules = [
-            'ship_id' => 'required|exists:ships,id',
-            'type' => 'required|in:liman,transit',
-            'direction' => 'nullable|string|max:255',
-            'location' => 'nullable|string|max:255',
-            'eta' => 'nullable|date',
-            'etd' => 'nullable|date',
-            'notes' => 'nullable|string|max:1000',  
-        ];
-        $request->validate($validationRules);
-        $transit->update([
-            'ship_id' => $request->ship_id,
-            'type' => $request->type,
-            'direction' => $request->direction,
-            'location' => $request->location,
-            'eta' => $request->eta,
-            'etd' => $request->etd,
-            'notes' => $request->notes
+        $transit = Transit::findOrFail($id); // ID'ye göre transit kaydı aranır
+    
+        $transit->update($request->validated()); // Sadece doğrulanan alanlar güncellenir
+    
+        return response()->json([
+            'message' => 'Geçiş (transit) başarıyla güncellendi',
+            'transit' => $transit
         ]);
-        return response()->json($transit, 200);
     }
+    
 
     /**
      * Remove the specified resource from storage.

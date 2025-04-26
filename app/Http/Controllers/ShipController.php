@@ -6,6 +6,7 @@ use App\Models\Ship;
 use Illuminate\Http\Request;
 
 use App\Http\Requests\ShipStoreRequest;
+use App\Http\Requests\ShipUpdateRequest;
 use App\Http\Controllers\SecurityProcess;
 
 
@@ -62,21 +63,17 @@ class ShipController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Ship $ship)
-    {
-        //
-        $validation = $request->validate([
-            'name' => 'string|max:255',
-            'imo_number' => 'string|max:255',
-            'flag' => 'string|max:255',
-            'gross_tonnage' => 'numeric'
-        ]);
-        $ship->update($validation);
-        return response()->json([
-            'message' => 'Ship updated successfully',
-            'ship' => $ship
-        ], 200);
-    }
+    public function update(ShipUpdateRequest $request, $id)
+{
+    $ship = Ship::findOrFail($id); // ID ile gemi kaydı bulunur
+
+    $ship->update($request->validated()); // Sadece doğrulanan verilerle update edilir
+
+    return response()->json([
+        'message' => 'Gemi başarıyla güncellendi.',
+        'ship'    => $ship
+    ]);
+}
 
     /**
      * Remove the specified resource from storage.
