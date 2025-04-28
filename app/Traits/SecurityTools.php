@@ -9,38 +9,77 @@ use Mews\Purifier\Facades\Purifier;
 
 trait SecurityTools
 {
-    public function sanitizeInput(string $input): string
+    /**
+     * Temel veya sıkı modda input sanitize eder.
+     */
+    public function sanitizeInput(string $input, string $mode = 'basic'): string
     {
-        return Purifier::clean(strip_tags($input));
+        $input = strip_tags($input);
+
+        if ($mode === 'strict') {
+            $config = ['HTML.Allowed' => '']; // Hiç HTML etiketi izin verilmez
+            return Purifier::clean($input, $config);
+        }
+
+        return Purifier::clean($input);
     }
 
-    public function sanitizeArray(array $inputs): array
+    /**
+     * Dizi veya nested array'i temizler.
+     */
+    public function deepSanitizeArray(array $inputs, string $mode = 'basic'): array
     {
-        return array_map(function ($item) {
-            return is_string($item) ? $this->sanitizeInput($item) : $item;
-        }, $inputs);
+        foreach ($inputs as $key => $value) {
+            if (is_array($value)) {
+                $inputs[$key] = $this->deepSanitizeArray($value, $mode);
+            } elseif (is_string($value)) {
+                $inputs[$key] = $this->sanitizeInput($value, $mode);
+            }
+        }
+
+        return $inputs;
     }
 
-    public function blockMaliciousWords(array $inputs, array $blacklist = []): bool
+    /**
+     * Şüpheli içerik tespiti yapar (pattern veya kelime).
+     */
+    public function blockMaliciousPatterns(array $inputs): bool
     {
-        $blacklist = $blacklist ?: ['<script>', '</script>', '<?php', '?>', 'DROP TABLE', 'UNION SELECT'];
+        $patterns = config('securitytools.patterns', [
+            '/<script.*?>.*?<\/script>/i',
+            '/(DROP TABLE|UNION SELECT|<\?php|\?>)/i',
+            '/(select\s+.*from|insert\s+into|update\s+.*set|delete\s+from)/i'
+        ]);
+
         foreach ($inputs as $value) {
-            foreach ($blacklist as $word) {
-                if (is_string($value) && Str::contains(strtolower($value), strtolower($word))) {
+            if (is_array($value)) {
+                if ($this->blockMaliciousPatterns($value)) {
                     return true;
+                }
+            } elseif (is_string($value)) {
+                foreach ($patterns as $pattern) {
+                    if (preg_match($pattern, strtolower($value))) {
+                        return true;
+                    }
                 }
             }
         }
+
         return false;
     }
 
+    /**
+     * Güvenlik logu atar.
+     */
     public function logSecurityRequest(Request $request, string $action = 'Request')
     {
-        Log::info("{$action} by " . ($request->user()?->email ?? 'guest'), [
+        Log::channel('security')->info("{$action} by " . ($request->user()?->email ?? 'guest'), [
+            'user_id' => $request->user()?->id ?? null,
             'ip' => $request->ip(),
             'method' => $request->method(),
             'path' => $request->path(),
             'user_agent' => $request->userAgent(),
+            'timestamp' => now()->toDateTimeString(),
         ]);
     }
 }

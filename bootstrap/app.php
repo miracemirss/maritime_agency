@@ -10,9 +10,11 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware) {
-        //
+    ->withMiddleware(callback: function (Middleware $middleware): void {
+        $middleware->alias([
+            'ip.ban' => \App\Http\Middleware\IpBanMiddleware::class,
+        ]);
     })
-    ->withExceptions(function (Exceptions $exceptions) {
+    ->withExceptions(using: function (Exceptions $exceptions): void {
         //
     })->create();
